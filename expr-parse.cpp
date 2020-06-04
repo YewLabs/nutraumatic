@@ -107,7 +107,7 @@ const char *ParsePossiblyInvertedPiece(const char *p, StdMutableFst* fst, char x
     Project(&one, PROJECT_OUTPUT);
     // RmEpsilon(&one);
     OptimizeExpr(one, &oneOptimized);
-    ParsePiece("AG", &anything, xMeaning);
+    ParsePiece("A", &anything, xMeaning);
     Difference(anything, oneOptimized, fst);
   } else {
     Union(fst, one);
