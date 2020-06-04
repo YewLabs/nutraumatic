@@ -16,86 +16,112 @@
 
 using namespace fst;
 
-struct AnagramPart {
-  StdVectorFst expr;
-  int count;
-  int group;
-};
 
-static void CollapseIdentical(vector<AnagramPart>* parts) {
-  for (size_t i = 0; i < parts->size(); ++i) {
-    size_t jin = i + 1, jout = i + 1;
-    while (jin < parts->size()) {
-      if (Equivalent((*parts)[i].expr, (*parts)[jin].expr)) {
-        ++(*parts)[i].count;
-        ++jin;
-      } else {
-        (*parts)[jout++] = (*parts)[jin++];
-      }
-    }
-    parts->resize(jout);
+static void GetPal(StdMutableFst* out) {
+  static StdVectorFst res;
+  static bool computed = false;
+  if (computed) {
+    *out = res;
+    return;
   }
+  // fprintf(stderr,"h1\n");
+
+  StdVectorFst onechar;
+  StdVectorFst singles[26];
+  ParseAtom("A", &onechar, 'a');
+  for (char ch = 'a'; ch <= 'z'; ++ch) {
+    ParseAtom(&ch, &singles[ch-'a'],'a');
+  }
+  // fprintf(stderr, "h2\n");
+
+  for (int len = 2; len < 7; ++len)
+  {
+    vector<StdVectorFst> to_intersect;
+    // fprintf(stderr, "h3 %d\n", len);
+
+    for (int i = 0; i * 2 + 1 < len; i++)
+    {
+      StdVectorFst column;
+      for (int ch = 0;ch<26; ++ch)
+      {
+        StdVectorFst poss;
+        poss.SetStart(poss.AddState());
+        poss.SetFinal(poss.Start(), StdArc::Weight::One());
+
+        for (int j = 0; j < i; ++j)
+          Concat(&poss, onechar);
+        Concat(&poss, singles[ch]);
+        for (int j = i + 1; j < len - i - 1; ++j)
+          Concat(&poss, onechar);
+        Concat(&poss, singles[ch]);
+        for (int j = len-i; j < len; ++j)
+          Concat(&poss, onechar);
+
+        Union(&column, poss);
+      }
+      to_intersect.push_back(column);
+    }
+    StdVectorFst v = to_intersect[0];
+    for (auto it = to_intersect.begin();it != to_intersect.end(); ++it) {}
+    IntersectExprs(to_intersect, &v);
+    Union(&res, v);
+  }
+
+  Union(&res, onechar);
+
+  *out = res;
 }
 
-static void MakeExpr(vector<AnagramPart> const& parts, StdMutableFst* out) {
+static void MakeExpr(vector<StdVectorFst> const& parts, StdMutableFst* out) {
+  StdVectorFst pal_parts, all_pals;
+  pal_parts.SetStart(pal_parts.AddState());
+  pal_parts.SetFinal(pal_parts.Start(), StdArc::Weight::One());
+
+  for (size_t i = 0; i < parts.size(); ++i)
+  {
+    Concat(&pal_parts, parts[i]);
+    if (getenv("DEBUG_FST") != NULL)
+    {
+      fprintf(stderr, "part %ld ", i);
+    }
+  }
+  if (parts.size() > 1) {
+    for (size_t i = parts.size()-1; i-- > 0;)
+    {
+      StdVectorFst reversed;
+      Reverse(parts[i], &reversed);
+      Concat(&pal_parts, reversed);
+      if (getenv("DEBUG_FST") != NULL)
+        fprintf(stderr, "part %ld ", i);
+    }
+  }
+  if (getenv("DEBUG_FST") != NULL)
+    fprintf(stderr, "\n");
+
+  GetPal(&all_pals);
   vector<StdVectorFst> to_intersect;
-
-  StdVectorFst any;
-  int total = 0;
-  for (size_t i = 0; i < parts.size(); ++i) {
-    Union(&any, parts[i].expr);
-    total += parts[i].count;
-  }
-
-
-  StdVectorFst has_length;
-  has_length.SetStart(has_length.AddState());
-  has_length.SetFinal(has_length.Start(), StdArc::Weight::One());
-  for (int i = 0; i < total; ++i) Concat(&has_length, any);
-  to_intersect.push_back(has_length);
-
-  for (size_t i = 0; i < parts.size(); ++i) {
-    StdVectorFst others;
-    for (size_t j = 0; j < parts.size(); ++j) {
-      if (j != i) Union(&others, parts[j].expr);
-    }
-    Closure(&others, CLOSURE_STAR);
-
-    StdVectorFst contains_part = others;
-    for (int n = 0; n < parts[i].count; ++n) {
-      Concat(&contains_part, parts[i].expr);
-      Concat(&contains_part, others);
-    }
-    to_intersect.push_back(contains_part);
-  }
-
+  to_intersect.push_back(all_pals);
+  to_intersect.push_back(pal_parts);
+  // Union(out, pal_parts);
   IntersectExprs(to_intersect, out);
 }
 
-const char *ParseAnagram(const char *p, StdMutableFst* out, bool quoted) {
+const char *ParsePalindrome(const char *p, StdMutableFst* out, char xMeaning) {
   if (p == NULL) return NULL;
 
-  vector<AnagramPart> parts;
-  while (*p != '>') {
+  vector<StdVectorFst> parts;
+  while (*p != 'Q') {
     StdVectorFst expr;
-    p = ParsePiece(p, &expr, quoted);
+    p = ParsePossiblyInvertedPiece(p, &expr, xMeaning);
     if (p == NULL) return NULL;
-
-    AnagramPart part;
-    OptimizeExpr(expr, &part.expr);
-    part.count = 1;
-    part.group = parts.size();
-    parts.push_back(part);
+    parts.push_back(expr);
   }
-
-  CollapseIdentical(&parts);
 
   if (getenv("DEBUG_FST") != NULL) {
     fprintf(stderr, "anagram: %zd unique parts\n", parts.size());
     for (size_t i = 0; i < parts.size(); ++i) {
-      fprintf(stderr, "  #%zu: %d x %d states\n", i,
-          parts[i].count,
-          parts[i].expr.NumStates());
+      fprintf(stderr, "  #%zu: %d states\n", i,
+          parts[i].NumStates());
     }
   }
 

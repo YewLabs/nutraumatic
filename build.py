@@ -14,12 +14,13 @@ import sys
 from glob import glob
 from memoize import memoize
 
-CFLAGS = "-std=c++11 -g -O6 -Wall -Werror -Wno-unused-local-typedefs -Wno-uninitialized"
+CFLAGS = "-std=c++11 -g -O2 -Wall -Werror -Wno-unused-local-typedefs -Wno-uninitialized"
 LIBS = ""
 
 def run(cmd):
   """ Run a shell command with memoization, exit if it fails """
   status = memoize(('sh', '-c', cmd))
+  print(cmd)
   if status: sys.exit(1)
 
 def getoutput(cmd):
@@ -44,38 +45,38 @@ def compile(main, others=[], cflags=CFLAGS, libs=LIBS):
 # Note that memoize will remember *all* the inputs and outputs of the build,
 # and re-invoke configure/make only if any of them change.
 
-run("mkdir -p bin/openfst tmp/openfst")
-run("cd tmp/openfst && ../../openfst-1.7.0/configure --enable-static --enable-shared=no --prefix=%s/bin/openfst" % os.getcwd())
-run("make -C tmp/openfst install")
-run("cp tmp/openfst/config.h bin/openfst/include/config.h")
+#run("mkdir -p bin/openfst tmp/openfst")
+#run("cd tmp/openfst && ../../openfst-1.7.0/configure --enable-static --enable-shared=no --prefix=%s/bin/openfst" % os.getcwd())
+#run("make -C tmp/openfst install")
+#run("cp tmp/openfst/config.h bin/openfst/include/config.h")
 fst_cflags = "-Ibin/openfst/include -Wno-sign-compare"
 fst_libs = "bin/openfst/lib/libfst.a -lpthread -ldl"
 
 #####
 # Build the Nutrimatic binaries.
 
-compile("remove-markup.cpp", [],
-    cflags=CFLAGS + " " + getoutput("xml2-config --cflags"),
-    libs=LIBS + " " + getoutput("xml2-config --libs") + " -ltre")
+# compile("remove-markup.cpp", [],
+#     cflags=CFLAGS + " " + getoutput("xml2-config --cflags"),
+#     libs=LIBS + " " + getoutput("xml2-config --libs") + " -ltre")
 
-compile("make-index.cpp", glob("index-*.cpp"))
+# compile("make-index.cpp", glob("index-*.cpp"))
 
-compile("merge-indexes.cpp", glob("index-*.cpp"))
+# compile("merge-indexes.cpp", glob("index-*.cpp"))
 
-compile("dump-index.cpp", glob("index-*.cpp"))
+# compile("dump-index.cpp", glob("index-*.cpp"))
 
-compile("explore-index.cpp", glob("index-*.cpp"))
+# compile("explore-index.cpp", glob("index-*.cpp"))
 
-compile("find-anagrams.cpp", glob("search-*.cpp") + glob("index-*.cpp"))
+# compile("find-anagrams.cpp", glob("search-*.cpp") + glob("index-*.cpp"))
 
-compile("find-phone-words.cpp", glob("search-*.cpp") + glob("index-*.cpp"))
+# compile("find-phone-words.cpp", glob("search-*.cpp") + glob("index-*.cpp"))
 
 compile("find-expr.cpp",
     glob("expr-*.cpp") + glob("search-*.cpp") + glob("index-*.cpp"),
     cflags=CFLAGS + " " + fst_cflags,
     libs=LIBS + " " + fst_libs)
 
-compile("test-expr.cpp",
-    glob("expr-*.cpp") + glob("search-*.cpp") + glob("index-*.cpp"),
-    cflags=CFLAGS + " " + fst_cflags,
-    libs=LIBS + " " + fst_libs)
+# compile("test-expr.cpp",
+#     glob("expr-*.cpp") + glob("search-*.cpp") + glob("index-*.cpp"),
+#     cflags=CFLAGS + " " + fst_cflags,
+#     libs=LIBS + " " + fst_libs)

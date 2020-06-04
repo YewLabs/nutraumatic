@@ -38,7 +38,7 @@ static void TestIndex(const char *expr, const char *yes, const char *no) {
   if (getenv("DEBUG_FST") != NULL) fprintf(stderr, "### [%s]\n", expr);
 
   StdVectorFst fst;
-  const char *p = ParseExpr(expr, &fst, false);
+  const char *p = ParseExpr(expr, &fst, 'a');
   if (p == NULL || *p != '\0') {
     fprintf(stderr, "FAIL: can't parse \"%s\"\n", p ? p : expr);
     exit(1);
