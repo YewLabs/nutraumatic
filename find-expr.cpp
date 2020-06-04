@@ -78,7 +78,7 @@ bool isWord(char* w) {
   string str;
   while (std::getline(is, str)) {
     if (l == str.length() && strncasecmp(w,str.c_str(), str.length()) == 0) {
-      fprintf(stderr, "It's a word: \"%s\"\n", str.c_str());
+      // fprintf(stderr, "It's a word: \"%s\"\n", str.c_str());
       return true;
     }
   }
