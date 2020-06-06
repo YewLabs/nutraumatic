@@ -27,21 +27,32 @@ const char *countries = "alakazarcacoctdeflgahiidiliniakskylamemdmamimnmsmomtnen
 
 // consider all the letters X could be
 const char* ParseOuter(const char *p, StdMutableFst *fst) {
-  const char* p3 = p;
+  char* rewritten = new char[strlen(p)];
+  strcpy(rewritten, p);
+  const char* rewrittenconst = rewritten;
+  for (char* ch = rewritten; *ch != '\0'; ++ch) {
+    if (*ch == 'S') {
+      if (ch == rewritten) {
+        return NULL;
+      } else {
+        *ch = *rewritten;
+      }
+    }
+  }
   if (strchr(p, 'X')) {
     for (char x = 'a'; x <= 'z'; ++x) {
-      p3 = p;
+      rewrittenconst = rewritten;
       StdVectorFst res;
-      p3= ParseExpr(p3, &res, x);
-      if (p3 == NULL || *p3 != '\0') {
-        return p3;
+      rewrittenconst= ParseExpr(rewrittenconst, &res, x);
+      if (rewrittenconst == NULL || *rewrittenconst != '\0') {
+        return p + (rewrittenconst - rewritten);
       }
       Union(fst, res);
     }
   } else {
-    p3 = ParseExpr(p, fst, 'a');
+    rewrittenconst = ParseExpr(rewrittenconst, fst, 'a');
   }
-  return p3;
+  return p + (rewrittenconst - rewritten);
 }
 
 
@@ -130,7 +141,7 @@ const char *ParsePiece(const char *p, StdMutableFst* fst, char xMeaning) {
     min = 1;
     max = INT_MAX;
     ++p;
-  } else if (*p == 'H') { // ?
+  } else if (*p == 'Y') { // ?
     min = 0;
     max = 1;
     ++p;
@@ -288,13 +299,13 @@ const char *ParseAtom(const char *p, StdMutableFst* fst, char xMeaning) {
 
   vector<char> chars;
 
-  if (*p == 'P') {
+  if (*p == 'B') {
     p = ParsePalindrome(p + 1, fst, xMeaning);
-    if (p == NULL || *p != 'Q') return NULL;
+    if (p == NULL || *p != 'D') return NULL;
     return p + 1;
-  } else if (*p == 'B') {
+  } else if (*p == 'P') {
     p = ParseExpr(p + 1, fst, xMeaning);
-    if (p == NULL || *p != 'Y') return NULL;
+    if (p == NULL || *p != 'Q') return NULL;
     return p + 1;
   } else if (*p == 'Z') {
     int prev = *(p-1);
@@ -310,7 +321,7 @@ const char *ParseAtom(const char *p, StdMutableFst* fst, char xMeaning) {
     GetIncr(fst);
     return p + 1;
   }
-  else if (*p == 'D')
+  else if (*p == 'H')
   {
     GetSum42(fst);
     return p + 1;
@@ -391,7 +402,7 @@ const char *ParseCharClass(const char *p, vector<char>* out) {
   {
     out->push_back('m');
   }
-  else if (*p == 'S' || *p == 'J') {
+  else if (*p == 'J') {
     out->push_back(0);
   } else if (*p == 'E') {
     for (int ch = 'a'; ch <= 'z'; ++ch) {

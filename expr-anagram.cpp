@@ -110,7 +110,7 @@ const char *ParsePalindrome(const char *p, StdMutableFst* out, char xMeaning) {
   if (p == NULL) return NULL;
 
   vector<StdVectorFst> parts;
-  while (*p != 'Q') {
+  while (*p != 'D') {
     StdVectorFst expr;
     p = ParsePossiblyInvertedPiece(p, &expr, xMeaning);
     if (p == NULL) return NULL;

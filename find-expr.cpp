@@ -28,7 +28,19 @@ int main(int argc, char *argv[]) {
   if (mustbeword && !isWord(argv[2])) {
     fprintf(stderr, "Error: \"%s\" does not seem to be a word.\n", argv[2]);
     return 3;
-  }
+  }/*
+  if (mustbeword) {
+    int caps = 0;
+    for (char* it=argv[2];*it!='\0';++it) {
+      if (*it <= 'Z' && *it >= 'A') {
+        caps++;
+      }
+    }
+    if (caps < 2) {
+      fprintf(stderr, "Error: \"%s\" is not a very interesting query.\n", argv[2]);
+      return 4;
+    }
+  }*/
 
   SymbolTable *chars = new SymbolTable("chars");
   chars->AddSymbol("epsilon", 0);
@@ -53,7 +65,7 @@ int main(int argc, char *argv[]) {
 
   // Require a space at the end, so the matches must be complete words.
   StdVectorFst space;
-  ParseExpr(" ", &space, 'a');
+  ParseExpr("X", &space, ' ');
   Concat(&parsed, space);
 
   FILE *fp = fopen(argv[1], "rb");
@@ -74,7 +86,7 @@ int main(int argc, char *argv[]) {
 
 bool isWord(char* w) {
   auto l = strlen(w);
-  std::ifstream is("/usr/share/dict/words");
+  std::ifstream is("/usr/share/dict/sowpods");
   string str;
   while (std::getline(is, str)) {
     if (l == str.length() && strncasecmp(w,str.c_str(), str.length()) == 0) {
