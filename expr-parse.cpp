@@ -26,16 +26,25 @@ typedef StdArc::Weight Weight;
 const char *countries = "alakazarcacoctdeflgahiidiliniakskylamemdmamimnmsmomtnenvnhnjnmnyncndohokorpariscsdtntxutvtvawawvwiwy";
 
 // consider all the letters X could be
+// also swap out K with the thing it means
 const char* ParseOuter(const char *p, StdMutableFst *fst) {
   char* rewritten = new char[strlen(p)];
   strcpy(rewritten, p);
+  char mVal = 'a'-1+strlen(p);
+  char wVal = 'A'-1+strlen(p);
   const char* rewrittenconst = rewritten;
   for (char* ch = rewritten; *ch != '\0'; ++ch) {
+    if (*ch == 'M') {
+      *ch = mVal;
+    }
+    else if (*ch == 'W') {
+      *ch = wVal;
+    }
     if (*ch == 'S') {
-      if (ch == rewritten) {
+      if (ch == rewritten) { // if we're at index 0
         return NULL;
       } else {
-        *ch = *rewritten;
+        *ch = *rewritten; // copy the first character.
       }
     }
   }
@@ -75,7 +84,7 @@ const char *ParseBranch(const char *p, StdMutableFst* fst, char xMeaning) {
   StdVectorFst first;
   p = ParseFactor(p, &first, xMeaning);
   to_intersect.push_back(first);
-  while (p != NULL && *p == 'N') {
+  while (p != NULL && *p == 'R') {
     StdVectorFst next;
     p = ParseFactor(p + 1, &next, xMeaning);
     to_intersect.push_back(next);
@@ -326,7 +335,7 @@ const char *ParseAtom(const char *p, StdMutableFst* fst, char xMeaning) {
     GetSum42(fst);
     return p + 1;
   }
-  else if (*p == 'R')
+  else if (*p == 'N')
   {
     GetDbl(fst);
     return p + 1;
@@ -393,14 +402,6 @@ const char *ParseCharClass(const char *p, vector<char>* out) {
     for (int ch = 'a'; ch <= 'z'; ++ch)
       if (strchr("nutrimatic", ch))
         out->push_back(ch);
-  }
-  else if (*p == 'M')
-  {
-    out->push_back('w');
-  }
-  else if (*p == 'W')
-  {
-    out->push_back('m');
   }
   else if (*p == 'J') {
     out->push_back(0);
