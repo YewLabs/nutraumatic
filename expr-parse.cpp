@@ -122,11 +122,9 @@ const char *ParseFactor(const char *p, StdMutableFst* fst, char xMeaning) {
 
 const char *ParsePossiblyInvertedPiece(const char *p, StdMutableFst* fst, char xMeaning) {
   StdVectorFst piece;
-  const char* start = p;
   p = ParsePiece(p, &piece, xMeaning);
   if (p == NULL)
     return NULL;
-  
   
   int inversions = 0;
   while (*p == 'L') {
@@ -136,7 +134,6 @@ const char *ParsePossiblyInvertedPiece(const char *p, StdMutableFst* fst, char x
 
   if (inversions%2==1)
   {
-    printf("ParsePossInvertedPiece '%s' '%s'\n", start, p);
     StdVectorFst singleChar, onecharpiece, pieceOptimized, diff;
     ParsePiece("A", &singleChar, xMeaning);
     vector<StdVectorFst> to_intersect{singleChar, piece};
