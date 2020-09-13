@@ -2,5 +2,6 @@
 /bin
 /tmp
 *.pyc
+.vscode/
 *.index
 autom4te.cache
