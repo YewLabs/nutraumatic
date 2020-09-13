@@ -32,20 +32,34 @@ const char* ParseOuter(const char *p, StdMutableFst *fst) {
   strcpy(rewritten, p);
   char mVal = 'a'-1+strlen(p);
   char wVal = 'A'-1+strlen(p);
-  const char* rewrittenconst = rewritten;
-  for (char* ch = rewritten; *ch != '\0'; ++ch) {
-    if (*ch == 'M') {
+  const char *rewrittenconst = rewritten;
+  for (char *ch = rewritten; *ch != '\0'; ++ch)
+  {
+    if (*ch == 'M')
+    {
       *ch = mVal;
     }
-    else if (*ch == 'W') {
+    else if (*ch == 'W')
+    {
       *ch = wVal;
     }
-    if (*ch == 'S') {
-      if (ch == rewritten) { // if we're at index 0
+    if (*ch == 'S')
+    {
+      if (ch == rewritten)
+      { // if we're at index 0
         return NULL;
-      } else {
+      }
+      else
+      {
         *ch = *rewritten; // copy the first character.
       }
+    }
+  }
+  for (char *ch = rewritten; *ch != '\0'; ++ch)
+  {
+    if (*ch == 'O' && *(ch+1) == 'L')
+    {
+      *ch = 'A';
     }
   }
   if (strchr(p, 'X')) {
@@ -107,8 +121,9 @@ const char *ParseFactor(const char *p, StdMutableFst* fst, char xMeaning) {
 }
 
 const char *ParsePossiblyInvertedPiece(const char *p, StdMutableFst* fst, char xMeaning) {
-  StdVectorFst one;
-  p = ParsePiece(p, &one, xMeaning);
+  StdVectorFst piece;
+  const char* start = p;
+  p = ParsePiece(p, &piece, xMeaning);
   if (p == NULL)
     return NULL;
   
@@ -121,16 +136,20 @@ const char *ParsePossiblyInvertedPiece(const char *p, StdMutableFst* fst, char x
 
   if (inversions%2==1)
   {
-    StdVectorFst anything, oneOptimized;
-    ArcSort(&one, StdOLabelCompare());
-    ArcMap(&one, RmWeightMapper<StdArc>());
-    Project(&one, PROJECT_OUTPUT);
+    printf("ParsePossInvertedPiece '%s' '%s'\n", start, p);
+    StdVectorFst singleChar, onecharpiece, pieceOptimized, diff;
+    ParsePiece("A", &singleChar, xMeaning);
+    vector<StdVectorFst> to_intersect{singleChar, piece};
+    IntersectExprs(to_intersect, &onecharpiece);
+    ArcSort(&onecharpiece, StdOLabelCompare());
+    ArcMap(&onecharpiece, RmWeightMapper<StdArc>());
+    Project(&onecharpiece, PROJECT_OUTPUT);
     // RmEpsilon(&one);
-    OptimizeExpr(one, &oneOptimized);
-    ParsePiece("A", &anything, xMeaning);
-    Difference(anything, oneOptimized, fst);
+    OptimizeExpr(onecharpiece, &pieceOptimized);
+    Difference(singleChar, pieceOptimized, &diff);
+    Union(fst, diff);
   } else {
-    Union(fst, one);
+    Union(fst, piece);
   }
   return p;
 }
@@ -198,20 +217,19 @@ const void GetIncr(StdMutableFst *out)
     Union(out, fst);
     return;
   }
-  State states[26];
-  for (size_t i=0;i<26;i++) {
+  State states[27];
+  State states2[27];
+  for (size_t i=0;i<27;i++) {
     states[i] = fst.AddState();
+    states2[i] = fst.AddState();
   }
-  State start = fst.AddState();
-  State final = fst.AddState();
-  fst.SetStart(start);
-  fst.SetFinal(final, Weight::One());
+  fst.SetStart(states[0]);
+  fst.SetFinal(states2[26], Weight::One());
   for (char i=0;i<26;i++) {
-    for (char j=i+1;j<26;j++) {
-      fst.AddArc(states[size_t(i)], StdArc('a' + j, 'a' + j, Weight::One(), states[size_t(j)]));
-    }
-    fst.AddArc(states[size_t(i)], StdArc(0, 0, Weight::One(), final));
-    fst.AddArc(start, StdArc('a' + i, 'a' + i, Weight::One(), states[size_t(i)]));
+    fst.AddArc(states[size_t(i)], StdArc('a' + i, 'a' + i, Weight::One(), states2[size_t(i + 1)]));
+    fst.AddArc(states2[size_t(i)], StdArc('a' + i, 'a' + i, Weight::One(), states2[size_t(i + 1)]));
+    fst.AddArc(states[size_t(i)], StdArc(0, 0, Weight::One(), states[size_t(i + 1)]));
+    fst.AddArc(states2[size_t(i)], StdArc(0, 0, Weight::One(), states2[size_t(i + 1)]));
   }
   Union(out, fst);
   made = true;
