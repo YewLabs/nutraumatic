@@ -1,4 +1,13 @@
-This is Nutrimatic (http://nutrimatic.org/usage.html).
+This is Nutraumatic (https://nutraumatic.org/), a puzzle from the 2021 MIT Mystery Hunt.
+
+Many thanks to Dan Egnor for building Nutrimatic (https://github.com/egnor/nutrimatic,
+https://nutrimatic.org), to which this puzzle is a love letter.
+
+===========================================================================================
+
+The rest of this readme is copied from the original Nutrimatic repository - it's probably
+accurate but if something doesn't work, we probably forgot to update the README when we
+changed it for the puzzle.
 
 To build the source, run "./build.py".  You will need the following installed:
    * Python
